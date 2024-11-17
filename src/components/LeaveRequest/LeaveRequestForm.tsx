@@ -7,10 +7,10 @@ import "react-datepicker/dist/react-datepicker.css";
 
 import { fetchLeaveTypes } from '../../api/leaveTypes';
 import { fetchUsers } from '../../api/users';
-import { createLeaveRequest } from '../../api/leaveRequests';
+import { createLeaveRequest, updateLeaveRequest } from '../../api/leaveRequests';
 import { calculateDays } from '../../utils/formatters';
 
-const LeaveRequestForm = ({ onCancel, onSubmit, onError }) => {
+const LeaveRequestForm = ({ onCancel, onSubmit, onError, selected, onUpdate }) => {
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
@@ -25,6 +25,8 @@ const LeaveRequestForm = ({ onCancel, onSubmit, onError }) => {
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     useEffect(() => {
+        handleReset();
+
         const getLeaveTypes = async () => {
             try {
                 await fetchLeaveTypes()
@@ -45,6 +47,8 @@ const LeaveRequestForm = ({ onCancel, onSubmit, onError }) => {
 
         getLeaveTypes();
         getUsers();
+
+        selected && setValues(selected);
     }, []);
 
     const handleLeaveTypeChange = (event: Event, fieldName: string) => {
@@ -132,20 +136,31 @@ const LeaveRequestForm = ({ onCancel, onSubmit, onError }) => {
         if (validateForm()) {
             const formData = { startDate, endDate, leaveType, reason, user };
 
-            const result = await createLeaveRequest(formData)
-                .then(onSubmit)
-                .catch(onError);
+            if (selected) {
+                await updateLeaveRequest(selected.id, formData )
+                    .then(onUpdate)
+                    .catch(onError);
+            }
+            else {
+                await createLeaveRequest(formData)
+                    .then(onSubmit)
+                    .catch(onError);
+            }
         }
     };
 
-    const handleReset = () => {
-        setStartDate(null);
-        setEndDate(null);
-        setLeaveType(null);
-        setReason('');
-        setUser(null);
-        setDays(0);
+    const setValues = (item?: Object) => {
+        setStartDate(item?.startDate || null);
+        setEndDate(item?.endDate);
+        setLeaveType(item?.leaveType?.id || '');
+        setReason(item?.reason);
+        setUser(item?.user?.id  || '');
+        setDays(null);
         setErrors({});
+    };
+
+    const handleReset = () => {
+        setValues();
     };
 
     const currentDate = new Date();

@@ -24,12 +24,27 @@ const HomePage = (): React.JSX.Element => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(false);
+
+    useEffect(() => {
+        const getLeaveRequests = async () => {
+            try {
+                await fetchLeaveRequests().then(setLeaveRequests);
+            } catch (error) {
+                console.error('Error fetching leave requests:', error);
+            }
+        };
+
+        getLeaveRequests();
+    }, []);
 
     const handleAddLeaveRequest = () => {
         setIsModalOpen(true);
     };
+
     const handleCloseModal = () => {
         setIsModalOpen(false);
+        setSelectedItem(null);
     };
 
     const handleCloseSnackbar = () => {
@@ -37,7 +52,25 @@ const HomePage = (): React.JSX.Element => {
     };
 
     const handleSaveRequest = (newRequest) => {
+        setOpenSnackbar(true);
         setLeaveRequests((prev) => [...prev, newRequest]);
+
+        handleCloseModal();
+    }
+
+    const handleUpdateRequest = (updatedRequest) => {
+        setOpenSnackbar(true);
+
+        const requests = leaveRequests.map(r => {
+            if (r.id === updatedRequest.id) {
+                return updatedRequest;
+            }
+            else {
+                r;
+            }
+        })
+        ß
+        setLeaveRequests(request);
 
         handleCloseModal();
     }
@@ -52,18 +85,11 @@ const HomePage = (): React.JSX.Element => {
         setLoading(false);
     }
 
-    // TODO
-    useEffect(() => {
-        const getLeaveRequests = async () => {
-            try {
-                await fetchLeaveRequests().then(setLeaveRequests);
-            } catch (error) {
-                console.error('Error fetching leave requests:', error);
-            }
-        };
+    const handleRowClick = (item) => {
+        setSelectedItem(item.row);
 
-        getLeaveRequests();
-    }, []);
+        setIsModalOpen(true);
+    }
 
     const columns: GridColDef[] = [
         {
@@ -91,7 +117,6 @@ const HomePage = (): React.JSX.Element => {
     ];
 
     const paginationModel = { page: 0, pageSize: 10 };
-
 
     return (
         <div>
@@ -133,8 +158,8 @@ const HomePage = (): React.JSX.Element => {
                     columns={columns}
                     initialState={{ pagination: { paginationModel } }}
                     pageSizeOptions={[1, 10]}
-                    checkboxSelection
                     sx={{ border: 0 }}
+                    onRowClick={handleRowClick}
                 />
 
                 <Grid container sx={{justifyContent: "center", alignItems: "center", marginTop: 2}}>
@@ -150,7 +175,13 @@ const HomePage = (): React.JSX.Element => {
             <Dialog open={isModalOpen} onCancel={handleCloseModal}>
                 <DialogTitle>Create New Leave Request</DialogTitle>
                 <DialogContent>
-                    <LeaveRequestForm onSubmit={handleSaveRequest} onCancel={handleCloseModal} onError={handleSaveError} />
+                    <LeaveRequestForm
+                        onSubmit={handleSaveRequest}
+                        onCancel={handleCloseModal}
+                        onError={handleSaveError}
+                        selected={selectedItem}
+                        onUpdate={handleUpdateRequest}
+                    />
                 </DialogContent>
             </Dialog>
             <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={handleCloseSnackbar}>
