@@ -18,3 +18,9 @@ export const mapEntity = (entity: Object) => {
         return acc;
     }, {});
 }
+
+export const mapToQuery = (object) => {
+    const snakeCaseObject = _.mapKeys(object, (value, key) => _.snakeCase(key));
+
+    return new URLSearchParams(snakeCaseObject).toString();
+}

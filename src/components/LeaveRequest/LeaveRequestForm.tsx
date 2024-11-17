@@ -4,7 +4,6 @@ import DatePicker from 'react-datepicker';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 
 import "react-datepicker/dist/react-datepicker.css";
-import { useNavigate } from 'react-router-dom';
 
 import { fetchLeaveTypes } from '../../api/leaveTypes';
 import { fetchUsers } from '../../api/users';
@@ -12,8 +11,6 @@ import { createLeaveRequest } from '../../api/leaveRequests';
 import { calculateDays } from '../../utils/formatters';
 
 const LeaveRequestForm = ({ onCancel, onSubmit, onError }) => {
-    const navigate = useNavigate();
-
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
@@ -132,7 +129,7 @@ const LeaveRequestForm = ({ onCancel, onSubmit, onError }) => {
     };
 
     const handleSave = async () => {
-        if (validateForm() || true) {
+        if (validateForm()) {
             const formData = { startDate, endDate, leaveType, reason, user };
 
             const result = await createLeaveRequest(formData)

@@ -1,9 +1,14 @@
 import apiClient from './index';
 
-import { mapEntity, mapForm } from '../utils/mappers';
+import { mapEntity, mapForm, mapToQuery } from '../utils/mappers';
 
-export const fetchLeaveRequests = async () => {
-    const response = await apiClient.get('/leave-requests');
+export const fetchLeaveRequests = async (filter?: Object) => {
+    let query = null;
+    if (filter) {
+        query = mapToQuery(filter);
+    }
+
+    const response = await apiClient.get('/leave-requests' + (query ? `?${query}` : ''));
     const items = response.data;
 
     return items.map(mapEntity);
