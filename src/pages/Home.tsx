@@ -101,7 +101,9 @@ const HomePage = (): React.JSX.Element => {
 
     const handleSaveRequest = (newRequest) => {
         setOpenSnackbar(true);
-        setLeaveRequests((prev) => [...prev, newRequest]);
+        const { pageSize } = paginationModel;
+
+        getLeaveRequests({ page: 0, pageSize }, leaveRequests);
 
         handleCloseModal();
     }
