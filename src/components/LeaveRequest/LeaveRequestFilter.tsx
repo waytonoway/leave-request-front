@@ -40,17 +40,17 @@ const LeaveRequestFilter = ({ onSubmit }) => {
             return acc;
         }, {});
 
-        onSubmit(formData);
+        onSubmit({ ...formData });
     };
 
     const handleReset = () => {
         setStartDate(null);
         setEndDate(null);
-        setUser(null);
+        setUser('');
         setSearchQuery('');
         setErrors({});
 
-        onSubmit();
+        onSubmit({});
     };
 
     return (

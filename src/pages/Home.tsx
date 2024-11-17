@@ -33,11 +33,11 @@ const HomePage = (): React.JSX.Element => {
     });
     const [filterModel, setFilterModel] = useState({});
 
-    const getLeaveRequests = async (pagination) => {
+    const getLeaveRequests = async (pagination, filter) => {
         setLoading(true);
 
         try {
-            await fetchLeaveRequests({...filterModel, page: pagination.page + 1, limit: pagination.pageSize})
+            await fetchLeaveRequests({...filter, page: pagination.page + 1, limit: pagination.pageSize})
                 .then(({ items, total }) => {
                     setLeaveRequests(items);
                     setTotalRowCount(total);
@@ -52,8 +52,8 @@ const HomePage = (): React.JSX.Element => {
     useEffect(() => {
         const { page, pageSize } = paginationModel;
 
-        getLeaveRequests({ page, pageSize });
-    }, [paginationModel]);
+        getLeaveRequests({ page, pageSize }, leaveRequests);
+    }, []);
 
     const handlePaginationModelChange = (params) => {
         setPaginationModel((prevModel) => {
@@ -69,10 +69,10 @@ const HomePage = (): React.JSX.Element => {
 
         const { page, pageSize } = paginationModel;
 
-        getLeaveRequests({ page, pageSize });
+        getLeaveRequests({ page, pageSize }, filterModel);
     }
 
-    const handleFilterRequest = async (formData = {}) => {
+    const handleFilterRequest = async (formData) => {
         const { page, pageSize } = paginationModel;
 
         if (Object.keys(formData).length) {
@@ -83,8 +83,7 @@ const HomePage = (): React.JSX.Element => {
             setFilterModel({});
         }
 
-
-        getLeaveRequests({ page, pageSize });
+        getLeaveRequests({ page, pageSize }, formData);
     }
 
     const handleAddLeaveRequest = () => {
