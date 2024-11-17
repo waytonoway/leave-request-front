@@ -11,7 +11,9 @@ export const fetchLeaveRequests = async (filter?: Object) => {
     const response = await apiClient.get('/leave-requests' + (query ? `?${query}` : ''));
     const items = response.data;
 
-    return items.map(mapEntity);
+    const total = parseInt(response.headers['x-total-count']);
+
+    return { items: items.map(mapEntity), total };
 };
 
 export const createLeaveRequest = async (data: any) => {

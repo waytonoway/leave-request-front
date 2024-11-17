@@ -20,23 +20,72 @@ import LeaveRequestFilter from './../components/LeaveRequest/LeaveRequestFilter'
 import { formatDate, calculateDaysFromRequest } from '../utils/formatters';
 
 const HomePage = (): React.JSX.Element => {
-    const [leaveRequests, setLeaveRequests] = useState(false);
+    const [leaveRequests, setLeaveRequests] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [loading, setLoading] = useState(false);
     const [selectedItem, setSelectedItem] = useState(false);
+    const [totalRowCount, setTotalRowCount] = useState(0);
+    const [paginationModel, setPaginationModel] = useState({
+        page: 0,
+        pageSize: 10,
+        total: 0
+    });
+    const [filterModel, setFilterModel] = useState({});
+
+    const getLeaveRequests = async (pagination) => {
+        setLoading(true);
+
+        try {
+            await fetchLeaveRequests({...filterModel, page: pagination.page + 1, limit: pagination.pageSize})
+                .then(({ items, total }) => {
+                    setLeaveRequests(items);
+                    setTotalRowCount(total);
+                });
+        } catch (error) {
+            console.error('Error fetching leave requests:', error);
+        }
+
+        setLoading(false);
+    };
 
     useEffect(() => {
-        const getLeaveRequests = async () => {
-            try {
-                await fetchLeaveRequests().then(setLeaveRequests);
-            } catch (error) {
-                console.error('Error fetching leave requests:', error);
-            }
-        };
+        const { page, pageSize } = paginationModel;
 
-        getLeaveRequests();
-    }, []);
+        getLeaveRequests({ page, pageSize });
+    }, [paginationModel]);
+
+    const handlePaginationModelChange = (params) => {
+        setPaginationModel((prevModel) => {
+            if (prevModel.pageSize !== params.pageSize) {
+                params.page = 0;
+            }
+
+            return {
+                ...prevModel,
+                ...params
+            };
+        });
+
+        const { page, pageSize } = paginationModel;
+
+        getLeaveRequests({ page, pageSize });
+    }
+
+    const handleFilterRequest = async (formData = {}) => {
+        const { page, pageSize } = paginationModel;
+
+        if (Object.keys(formData).length) {
+            formData.startDate && (formData.startDate = formData.startDate.getTime() / 1000);
+            formData.endDate && (formData.endDate = formData.endDate.getTime() / 1000);
+            setFilterModel(formData);
+        } else {
+            setFilterModel({});
+        }
+
+
+        getLeaveRequests({ page, pageSize });
+    }
 
     const handleAddLeaveRequest = () => {
         setIsModalOpen(true);
@@ -69,24 +118,14 @@ const HomePage = (): React.JSX.Element => {
                 r;
             }
         })
-        ß
-        setLeaveRequests(request);
+
+        setLeaveRequests(requests);
 
         handleCloseModal();
     }
 
     const handleSaveError = (error) => {
         // TODO show error from API in modal
-    }
-
-    const handleFilterRequest = async (formData) => {
-        setLoading(true);
-
-        formData.startDate && (formData.startDate = formData.startDate.getTime() / 1000);
-        formData.endDate && (formData.endDate = formData.endDate.getTime() / 1000);
-
-        await fetchLeaveRequests(formData).then(setLeaveRequests);
-        setLoading(false);
     }
 
     const handleRowClick = (item) => {
@@ -119,8 +158,6 @@ const HomePage = (): React.JSX.Element => {
         },
         { field: 'reason', headerName: 'Reason', width: 300 },
     ];
-
-    const paginationModel = { page: 0, pageSize: 10 };
 
     return (
         <div>
@@ -160,10 +197,15 @@ const HomePage = (): React.JSX.Element => {
                 <DataGrid
                     rows={leaveRequests}
                     columns={columns}
-                    initialState={{ pagination: { paginationModel } }}
-                    pageSizeOptions={[1, 10]}
+                    paginationModel={paginationModel}
+                    pagination
+                    paginationMode="server"
+                    rowCount={totalRowCount}
+                    pageSize={paginationModel.pageSize}
                     sx={{ border: 0 }}
                     onRowClick={handleRowClick}
+                    pageSizeOptions={[10, 20, 50]}
+                    onPaginationModelChange={handlePaginationModelChange}
                 />
 
                 <Grid container sx={{justifyContent: "center", alignItems: "center", marginTop: 2}}>

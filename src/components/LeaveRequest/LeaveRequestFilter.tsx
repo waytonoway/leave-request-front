@@ -47,6 +47,7 @@ const LeaveRequestFilter = ({ onSubmit }) => {
         setStartDate(null);
         setEndDate(null);
         setUser(null);
+        setSearchQuery('');
         setErrors({});
 
         onSubmit();
@@ -97,7 +98,7 @@ const LeaveRequestFilter = ({ onSubmit }) => {
             </Grid>
             <Grid item sm={5}>
                 <TextField
-                    label="Search by leave type and reason..."
+                    label="Search by reason..."
                     value={searchQuery}
                     inputProps={{maxLength: 100}}
                     onChange={(e) => setSearchQuery(e.target.value)}
