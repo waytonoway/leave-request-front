@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, MenuItem, Button, Select, InputLabel, Input, FormControl, FormHelperText, Grid, IconButton } from '@mui/material';
 import DatePicker from 'react-datepicker';
-import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
-import CloseIcon from '@mui/icons-material/Close';
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from 'react-router-dom';
@@ -10,35 +9,29 @@ import { useNavigate } from 'react-router-dom';
 import { fetchLeaveTypes } from '../../api/leaveTypes';
 import { fetchUsers } from '../../api/users';
 import { createLeaveRequest } from '../../api/leaveRequests';
+import { calculateDays } from '../../utils/formatters';
 
-const LeaveRequestForm = () => {
+const LeaveRequestForm = ({ onCancel, onSubmit, onError }) => {
     const navigate = useNavigate();
 
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
 
     const [leaveTypes, setLeaveTypes] = useState<string[]>([]);
-    const [leaveType, setLeaveType] = useState<string>('');
+    const [leaveType, setLeaveType] = useState<number>('');
 
     const [reason, setReason] = useState<string>('');
     const [users, setUsers] = useState<string[]>([]);
-    const [user, setUser] = useState<string>('');
+    const [user, setUser] = useState<number>('');
     const [days, setDays] = useState<number>(0);
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-    // Dummy user list
-    const mockedUsers = ['John Doe', 'Jane Smith', 'Alice Johnson', 'Bob Brown', 'Charlie Davis', 'David Clark', 'Eve White', 'Frank King', 'Grace Lee', 'Henry Moore'];
-
-    const mockedLeaveTypes = ['personal', 'sick', 'vacation', 'bereavement'];
-
     useEffect(() => {
         const getLeaveTypes = async () => {
             try {
-                const types = await fetchLeaveTypes()
-                    .catch(() => mockedLeaveTypes);
-
-                setLeaveTypes(types);
+                await fetchLeaveTypes()
+                    .then(types => setLeaveTypes(types));
             } catch (error) {
                 console.error('Error fetching leave types:', error);
             }
@@ -46,10 +39,8 @@ const LeaveRequestForm = () => {
 
         const getUsers = async () => {
             try {
-                const users = await fetchUsers()
-                    .catch(() => mockedUsers);
-
-                setUsers(users);
+                await fetchUsers()
+                    .then(users => setUsers(users));
             } catch (error) {
                 console.error('Error fetching users:', error);
             }
@@ -58,6 +49,19 @@ const LeaveRequestForm = () => {
         getLeaveTypes();
         getUsers();
     }, []);
+
+    const handleLeaveTypeChange = (event: Event, fieldName: string) => {
+        setLeaveType(event.target.value);
+
+        setErrors((prevErrors) => ({...prevErrors, leaveType: ''}));
+    }
+
+    // TODO combine with method above and use method by field name as second argument
+    const handleUserChange = (event: Event) => {
+        setUser(event.target.value);
+
+        setErrors((prevErrors) => ({...prevErrors, user: ''}));
+    }
 
     const handleStartDateChange = (date: Date) => {
         setStartDate(date);
@@ -91,13 +95,6 @@ const LeaveRequestForm = () => {
             ...prevErrors,
             ...newErrors
         }));
-    };
-
-    const calculateDays = (start: Date, end: Date) => {
-        const timeDiff = end.getTime() - start.getTime();
-        const diffDays = timeDiff / (1000 * 3600 * 24);
-
-        return Math.floor(diffDays * 100) / 100;
     };
 
     const validateForm = () => {
@@ -135,26 +132,23 @@ const LeaveRequestForm = () => {
     };
 
     const handleSave = async () => {
-        if (validateForm()) {
-            const formData = { startDate, endDate, leaveType, reason, user, days };
-            // TODO send Save request and handle success or failure
-            console.log('Leave request saved:', formData);
-            const result = await createLeaveRequest(formData).then().catch();
+        if (validateForm() || true) {
+            const formData = { startDate, endDate, leaveType, reason, user };
+
+            const result = await createLeaveRequest(formData)
+                .then(onSubmit)
+                .catch(onError);
         }
     };
 
     const handleReset = () => {
         setStartDate(null);
         setEndDate(null);
-        setLeaveType('');
+        setLeaveType(null);
         setReason('');
-        setUser('');
+        setUser(null);
         setDays(0);
         setErrors({});
-    };
-
-    const handleReturn = () => {
-        navigate('/');
     };
 
     const currentDate = new Date();
@@ -162,20 +156,25 @@ const LeaveRequestForm = () => {
     const endOfDayTime = new Date(currentDate.setHours(23, 59, 59, 0));
 
     return (
-        <Grid container spacing={2} sx={{marginTop: 3, justifyContent: "center"}} direction="column">
-            <Grid item>
-                <Grid container spacing={2} sx={{justifyContent: "space-between", alignItems: "center",}} >
-                    <Grid item>
-                        <h1>Create Leave Request</h1>
-                    </Grid>
-                    <Grid item>
-                        <IconButton onClick={handleReturn} >
-                            <CloseIcon />
-                        </IconButton>
-                    </Grid>
-                </Grid>
+        <Grid container spacing={2} sx={{marginTop: 3, justifyContent: "center"}}>
+            <Grid item sm={6} >
+                <FormControl fullWidth>
+                    <InputLabel id="leaveType">Leave Type*</InputLabel>
+                    <Select
+                        value={leaveType}
+                        onChange={handleLeaveTypeChange}
+                        label="Leave Type"
+                        error={!!errors.leaveType}
+                    >
+                        {leaveTypes.map((leaveType, index) => (
+                            <MenuItem key={index} value={leaveType.id}>
+                                {leaveType.type}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
             </Grid>
-            <Grid item>
+            <Grid item sm={6}>
                 <InputLabel htmlFor="startDate">Start Date*</InputLabel>
                 <DatePicker
                     selected={startDate}
@@ -190,8 +189,18 @@ const LeaveRequestForm = () => {
                 />
                 {errors.startDate && <FormHelperText error={true}>{errors.startDate}</FormHelperText>}
             </Grid>
+            <Grid item sm={6}>
+                <TextField
+                    label="Reason*"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    inputProps={{maxLength: 50}}
+                    fullWidth
+                    error={!!errors.reason}
+                />
+            </Grid>
 
-            <Grid item>
+            <Grid item sm={6}>
                 <InputLabel htmlFor="endDate">End Date*</InputLabel>
                 <DatePicker
                     selected={endDate}
@@ -206,67 +215,40 @@ const LeaveRequestForm = () => {
                 />
                 {errors.endDate && <FormHelperText error={true}>{errors.endDate}</FormHelperText>}
             </Grid>
-            <Grid item>
-                <FormControl fullWidth>
-                    <InputLabel id="leaveType">Leave Type*</InputLabel>
-                    <Select
-                        value={leaveType}
-                        onChange={(e) => setLeaveType(e.target.value)}
-                        label="Leave Type"
-                        error={errors.leaveType}
-                    >
-                        {leaveTypes.map((leaveType, index) => (
-                            <MenuItem key={index} value={leaveType}>
-                                {leaveType}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            </Grid>
 
-            <Grid item>
-                <TextField
-                    label="Reason*"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    inputProps={{maxLength: 50}}
-                    fullWidth
-                    error={errors.reason}
-                />
-            </Grid>
-            <Grid item>
+            <Grid item sm={6}>
                 <InputLabel>Assigned User*</InputLabel>
                 <FormControl fullWidth>
                     <Select
                         value={user}
-                        onChange={(e) => setUser(e.target.value)}
+                        onChange={handleUserChange}
                         label="Assign User"
-                        error={errors.user}
+                        error={!!errors.user}
                     >
                         {users.map((user, index) => (
-                            <MenuItem key={index} value={user}>
-                                {user}
+                            <MenuItem key={index} value={user.id}>
+                                {user.first_name} {user.middle_name} {user.last_name}
                             </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
             </Grid>
 
-            <Grid item>
+            <Grid item sm={6}>
                 <InputLabel>Number of Days</InputLabel>
                 <Input disabled value={days}/>
             </Grid>
 
-            <Grid item>
+            <Grid item sm={6} offset={6}>
                 <Grid container spacing={2} >
                     <Grid item>
-                        <IconButton onClick={handleReturn} >
-                            <KeyboardReturnIcon />
+                        <IconButton onClick={handleReset} >
+                            <CleaningServicesIcon />
                         </IconButton>
                     </Grid>
                     <Grid item>
-                        <Button variant="outlined" color="secondary" onClick={handleReset}>
-                            Reset
+                        <Button variant="outlined" color="secondary" onClick={onCancel}>
+                            Cancel
                         </Button>
                     </Grid>
                     <Grid item>
