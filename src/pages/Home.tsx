@@ -81,6 +81,10 @@ const HomePage = (): React.JSX.Element => {
 
     const handleFilterRequest = async (formData) => {
         setLoading(true);
+
+        formData.startDate && (formData.startDate = formData.startDate.getTime() / 1000);
+        formData.endDate && (formData.endDate = formData.endDate.getTime() / 1000);
+
         await fetchLeaveRequests(formData).then(setLeaveRequests);
         setLoading(false);
     }

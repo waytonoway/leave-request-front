@@ -5,7 +5,6 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 
 import { fetchUsers } from '../../api/users';
-import { fetchLeaveRequests} from '../../api/leaveRequests';
 
 const LeaveRequestFilter = ({ onSubmit }) => {
     const [startDate, setStartDate] = useState<Date | null>(null);
